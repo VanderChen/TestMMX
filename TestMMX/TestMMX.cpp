@@ -9,35 +9,29 @@
 using namespace std;
 
 
-void Test_MMX(int intWidth, int intHeight, int RGB_Bit);
-void Test_NoMMX(int intWidth, int intHeight, int RGB_Bit);
+DWORD Test_MMX(int intWidth, int intHeight, int RGB_Bit);
+DWORD Test_NoMMX(int intWidth, int intHeight, int RGB_Bit);
 int main()
 {
-	DWORD start_time = GetTickCount();
+	
+	cout << "使用MMX用时：" << Test_MMX(640, 480, 24) << "ms!" << endl;//输出运行时间
 
-	Test_MMX(640, 480, 24);
+	
 
-	DWORD end_time = GetTickCount();
-
-	cout << "使用MMX用时：" << (end_time - start_time) << "ms!" << endl;//输出运行时间
-
-	start_time = GetTickCount();
-
-	Test_NoMMX(640, 480, 24);
-
-	end_time = GetTickCount();
-
-	cout << "不使用MMX用时：" << (end_time - start_time) << "ms!" << endl;
+	cout << "不使用MMX用时：" << Test_NoMMX(640, 480, 24) << "ms!" << endl;
 	return 0;
 }
 
-void Test_MMX(int intWidth, int intHeight, int RGB_Bit)
+DWORD Test_MMX(int intWidth, int intHeight, int RGB_Bit)
 {
+	DWORD start_time;
+	DWORD end_time;
 	_try{
 		_asm EMMS
 	}
 		_except(EXCEPTION_EXECUTE_HANDLER) {
 	}
+	
 	HDC hDC;
 	LPBITMAPINFO lpInfo;                   //指向图片对象的长指针类型
 	int intSize, i;
@@ -57,20 +51,26 @@ void Test_MMX(int intWidth, int intHeight, int RGB_Bit)
 	memcpy(lpBuf, lpBuf1, intSize);
 	lpInfo = (LPBITMAPINFO)(lpBuf + 0x0e);
 	hDC = GetDC(NULL);
+
+	start_time = GetTickCount();
 	for (i = 0; i<255; i++)    //默认是图像按255阶渐变，即 让fade的值变化255次			
 	{
 		Mmx(lpBuf1 + 0x60, lpBuf2 + 0x60, lpBuf + 0x60, intWidth, intHeight, RGB_Bit, i);					//指定从lpBuf+0x60这一行开始扫描
 		SetDIBitsToDevice(hDC, 300, 150, intWidth, intHeight, 0, 0, 0, 480, lpBuf + 0x60, lpInfo, DIB_RGB_COLORS);//该函数使用DIB位图和颜色数据对与目标设备环境相关的设备上的指定矩形中的像素进行设置。
 	}
+	end_time = GetTickCount();
+	
 	LocalFree(lpBuf1);
 
 	LocalFree(lpBuf2);
 
 	ReleaseDC(NULL, hDC);
+
+	return (end_time - start_time);
 }
 
 
-void Test_NoMMX(int intWidth, int intHeight, int RGB_Bit)
+DWORD Test_NoMMX(int intWidth, int intHeight, int RGB_Bit)
 {
 	_try{
 		_asm EMMS
@@ -96,15 +96,21 @@ void Test_NoMMX(int intWidth, int intHeight, int RGB_Bit)
 	memcpy(lpBuf, lpBuf1, intSize);
 	lpInfo = (LPBITMAPINFO)(lpBuf + 0x0e);
 	hDC = GetDC(NULL);
+	DWORD start_time = GetTickCount();
+
 	for (i = 0; i<255; i++)    //默认是图像按255阶渐变，即 让fade的值变化255次			
 	{
 		NoMMX(lpBuf1 + 0x60, lpBuf2 + 0x60, lpBuf + 0x60, intWidth, intHeight, RGB_Bit, i);
 				//指定从lpBuf+0x60这一行开始扫描
 		SetDIBitsToDevice(hDC, 300, 150, intWidth, intHeight, 0, 0, 0, 480, lpBuf + 0x60, lpInfo, DIB_RGB_COLORS);//该函数使用DIB位图和颜色数据对与目标设备环境相关的设备上的指定矩形中的像素进行设置。
 	}
+	
+	DWORD end_time = GetTickCount();
 	LocalFree(lpBuf1);
 
 	LocalFree(lpBuf2);
 
 	ReleaseDC(NULL, hDC);
+
+	return (end_time - start_time);
 }
